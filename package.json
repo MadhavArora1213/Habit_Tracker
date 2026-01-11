@@ -1,0 +1,19 @@
+{
+    "name": "habit-tracker-intelligence",
+    "version": "1.0.0",
+    "description": "INTELLIGENCE - Premium Life OS for Habit Tracking and Productivity",
+    "private": true,
+    "scripts": {
+        "generate-config": "node generate-config.js",
+        "build": "node generate-config.js",
+        "start": "npx serve ."
+    },
+    "keywords": [
+        "habit-tracker",
+        "productivity",
+        "dashboard",
+        "firebase"
+    ],
+    "author": "INTELLIGENCE System",
+    "license": "MIT"
+}

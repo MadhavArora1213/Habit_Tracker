@@ -1,4 +1,5 @@
 // INTELLIGENCE™ CORE // FIREBASE CONFIGURATION
+// Auto-generated from .env - DO NOT EDIT DIRECTLY
 const firebaseConfig = {
   apiKey: "AIzaSyCp8TPP7PX0yknF0J9MPIz17-x8nfWIN6c",
   authDomain: "habit-tracker-edbda.firebaseapp.com",

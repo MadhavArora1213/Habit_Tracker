@@ -39,14 +39,24 @@
         }
         const auth = firebase.auth();
         
+        // Wait for weekly planner function to be available
+        function waitForInitFunction(uid, retries = 10) {
+            if (typeof initWeeklyPlanner === 'function') {
+                initWeeklyPlanner(uid);
+            } else if (retries > 0) {
+                setTimeout(() => waitForInitFunction(uid, retries - 1), 100);
+            } else {
+                console.error("initWeeklyPlanner not available after retries");
+            }
+        }
+        
         auth.onAuthStateChanged(user => {
             if (!user) {
                 window.location.href = 'auth.html';
             } else {
                 document.getElementById('user-email').innerText = user.email;
-                if (typeof initWeeklyPlanner === 'function') {
-                    initWeeklyPlanner(user.uid);
-                }
+                // Use retry mechanism to ensure function is available
+                waitForInitFunction(user.uid);
             }
         });
 
@@ -56,6 +66,7 @@
             });
         };
     </script>
+
 </head>
 <body>
     <div class="bg-ambient"></div>
@@ -429,12 +440,19 @@
                 const docRef = getDb().collection('users').doc(currentUid).collection('weeklyPlanner').doc(weekId);
                 const doc = await docRef.get();
                 
-                if (doc.exists) {
-                    weeklyTasksData = doc.data().days || {};
-                } else {
-                    weeklyTasksData = {};
+                // Initialize empty structure for all 7 days
+                weeklyTasksData = {};
+                for (let i = 0; i < 7; i++) {
+                    weeklyTasksData[i] = [];
+                }
+                
+                // If document exists, merge saved data
+                if (doc.exists && doc.data().days) {
+                    const savedDays = doc.data().days;
                     for (let i = 0; i < 7; i++) {
-                        weeklyTasksData[i] = [];
+                        if (savedDays[i] && Array.isArray(savedDays[i])) {
+                            weeklyTasksData[i] = savedDays[i];
+                        }
                     }
                 }
                 
@@ -448,8 +466,16 @@
             } catch (e) {
                 console.error("Error loading weekly tasks:", e);
                 if (syncStatus) syncStatus.innerText = '// Error';
+                
+                // Initialize empty data on error
+                weeklyTasksData = {};
+                for (let i = 0; i < 7; i++) {
+                    weeklyTasksData[i] = [];
+                }
+                renderAllDays();
             }
         }
+
 
         // Render All Days
         function renderAllDays() {
@@ -467,14 +493,35 @@
             tasks.forEach((task, idx) => {
                 const taskItem = document.createElement('div');
                 taskItem.className = `task-item ${task.completed ? 'completed' : ''}`;
-                taskItem.innerHTML = `
-                    <input type="checkbox" ${task.completed ? 'checked' : ''} 
-                           onchange="toggleDayTask(${dayIndex}, ${idx})">
-                    <span class="task-text">${task.name}</span>
-                    <button class="delete-task-btn" onclick="deleteDayTask(${dayIndex}, ${idx})">×</button>
-                `;
+                
+                // Checkbox
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = task.completed;
+                checkbox.addEventListener('change', () => toggleDayTask(dayIndex, idx));
+                
+                // Task text
+                const taskText = document.createElement('span');
+                taskText.className = 'task-text';
+                taskText.textContent = task.name;
+                
+                // Delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-task-btn';
+                deleteBtn.textContent = '×';
+                deleteBtn.type = 'button';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    deleteDayTask(dayIndex, idx);
+                });
+                
+                taskItem.appendChild(checkbox);
+                taskItem.appendChild(taskText);
+                taskItem.appendChild(deleteBtn);
                 tasksList.appendChild(taskItem);
             });
+
 
             // Update day stats
             const completed = tasks.filter(t => t.completed).length;
@@ -603,13 +650,25 @@
 
         // Delete Day Task
         async function deleteDayTask(dayIndex, taskIndex) {
-            if (confirm('Delete this task?')) {
-                weeklyTasksData[dayIndex].splice(taskIndex, 1);
-                await saveWeeklyData();
-                renderDayTasks(dayIndex);
-                updateOverallProgress();
+            try {
+                // Immediately remove from local data
+                if (weeklyTasksData[dayIndex] && weeklyTasksData[dayIndex][taskIndex] !== undefined) {
+                    weeklyTasksData[dayIndex].splice(taskIndex, 1);
+                    
+                    // Update UI immediately
+                    renderDayTasks(dayIndex);
+                    updateOverallProgress();
+                    
+                    // Save to Firebase
+                    await saveWeeklyData();
+                }
+            } catch (e) {
+                console.error("Error deleting task:", e);
+                // Reload to get consistent state
+                await loadWeeklyTasks();
             }
         }
+
 
         // Save Weekly Data
         async function saveWeeklyData() {

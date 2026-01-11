@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Environment variables (contains secrets)
+.env
+.env.local
+.env.*.local
+
+# Generated config (contains API keys from .env)
+firebase-config.js
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build output
+dist/
+build/
+.vercel/

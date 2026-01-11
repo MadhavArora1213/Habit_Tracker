@@ -132,17 +132,21 @@
 
             <div id="auth-error"></div>
 
-            <form id="auth-form">
+            <form id="auth-form" autocomplete="off">
                 <div class="form-group">
                     <label class="form-label">Email Address</label>
-                    <input type="email" id="email" class="form-input" placeholder="name@intelligence.com" required>
+                    <input type="email" id="email" class="form-input" placeholder="name@intelligence.com" required
+                           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                           data-form-type="other">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Password</label>
-                    <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+                    <input type="password" id="password" class="form-input" placeholder="••••••••" required
+                           autocomplete="new-password" data-form-type="other">
                 </div>
                 <button type="submit" class="auth-btn" id="submit-btn">Initialize Protocol</button>
             </form>
+
 
             <div class="auth-divider">OR</div>
 
@@ -186,8 +190,29 @@
                 tabLogin.classList.remove('active');
                 window.authMode = 'register';
             }
+            
+            // Clear form on tab switch
+            clearForm();
         }
+        
+        function clearForm() {
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('auth-error').style.display = 'none';
+        }
+        
+        // Clear form on page load to prevent autofill
+        window.addEventListener('load', function() {
+            setTimeout(clearForm, 100);
+        });
+        
+        // Also clear on DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', function() {
+            clearForm();
+        });
+        
         window.authMode = 'login';
     </script>
+
 </body>
 </html>
