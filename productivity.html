@@ -3,13 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Security Meta Tags -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    
+    <!-- SEO -->
     <title>Performance Intelligence | INTELLIGENCE™</title>
+    <meta name="robots" content="noindex, nofollow">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <script type="module">
+        import firebaseConfig from './firebase-config.js';
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'auth.html';
+            } else {
+                if (document.getElementById('user-email')) {
+                    document.getElementById('user-email').innerText = user.email;
+                }
+            }
+        });
+
+        window.logout = () => {
+            auth.signOut().then(() => {
+                window.location.href = 'auth.html';
+            });
+        };
+    </script>
 </head>
+
 <body>
     <div class="bg-ambient"></div>
 
