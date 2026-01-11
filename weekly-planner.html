@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Planner | INTELLIGENCE™</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script type="module">
+        import firebaseConfig from './firebase-config.js';
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'auth.html';
+            } else {
+                document.getElementById('user-email').innerText = user.email;
+                if (typeof initWeeklyPlanner === 'function') {
+                    initWeeklyPlanner(user.uid);
+                }
+            }
+        });
+
+        window.logout = () => {
+            auth.signOut().then(() => {
+                window.location.href = 'auth.html';
+            });
+        };
+    </script>
+</head>
+<body>
+    <div class="bg-ambient"></div>
+
+    <header class="container">
+        <nav class="system-nav">
+            <div class="logo"><a href="index.html" style="text-decoration: none; color: inherit;">Intelligence</a> / Weekly Planner</div>
+            <div class="system-status">
+                <span class="status-indicator"></span>
+                <span>PLANNING ENGINE: ACTIVE // <span id="user-email">...</span></span>
+                <span id="sync-status" style="color: var(--accent-gold);"></span>
+                <button onclick="logout()" style="background: none; border: 1px solid var(--glass-border); color: var(--text-muted); font-size: 0.6rem; padding: 4px 8px; cursor: pointer; border-radius: 4px; margin-left: 10px;">LOGOUT</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="weekly-planner-main container">
+        <!-- Top Stats Row -->
+        <div class="weekly-top-row">
+            <!-- Quote & Week Start -->
+            <div class="weekly-quote-card glass-panel">
+                <div class="quote-text" id="motivational-quote">"Inspiration comes only during work"</div>
+                <div class="week-start-picker">
+                    <span class="picker-label">Start of the week</span>
+                    <input type="date" id="week-start-date" class="week-date-input" onchange="changeWeek()">
+                </div>
+            </div>
+
+            <!-- Overall Progress -->
+            <div class="weekly-progress-card glass-panel">
+                <h3 class="card-title">Overall Progress</h3>
+                <div class="progress-content">
+                    <div class="progress-chart-container">
+                        <canvas id="weekly-bar-chart"></canvas>
+                    </div>
+                    <div class="progress-circle-container">
+                        <div class="progress-circle" id="overall-progress-circle">
+                            <span class="progress-value">0%</span>
+                        </div>
+                        <span class="progress-label"><span id="completed-tasks">0</span> / <span id="total-tasks">0</span> Completed</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Habit Tracker Mini -->
+            <div class="weekly-habits-card glass-panel">
+                <h3 class="card-title">Habit Tracker</h3>
+                <div class="habits-mini-grid" id="habits-mini-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 7-Day Grid -->
+        <div class="weekly-days-grid">
+            <!-- Sunday -->
+            <div class="day-card glass-panel" data-day="0">
+                <div class="day-header">
+                    <span class="day-name">Sunday</span>
+                    <span class="day-date" id="day-date-0">--/--/----</span>
+                </div>
+                <div class="day-progress-circle" id="day-progress-0">
+                    <span class="progress-value">0%</span>
+                </div>
+                <div class="day-tasks">
+                    <div class="tasks-header">
+                        <span>Tasks</span>
+                        <button class="add-day-task-btn" onclick="openDayTaskModal(0)">+</button>
+                    </div>
+                    <div class="tasks-list" id="tasks-list-0">
+                        <!-- Tasks rendered here -->
+                    </div>
+                </div>
+                <div class="day-footer">
+                    <div class="footer-stat">
+                        <span class="stat-label">Completed</span>
+                        <span class="stat-value completed" id="completed-0">0</span>
+                    </div>
+                    <div class="footer-stat">
+                        <span class="stat-label">Not Completed</span>
+                        <span class="stat-value not-completed" id="not-completed-0">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monday -->
+            <div class="day-card glass-panel" data-day="1">
+                <div class="day-header">
+                    <span class="day-name">Monday</span>
+                    <span class="day-date" id="day-date-1">--/--/----</span>
+                </div>
+                <div class="day-progress-circle" id="day-progress-1">
+                    <span class="progress-value">0%</span>
+                </div>
+                <div class="day-tasks">
+                    <div class="tasks-header">
+                        <span>Tasks</span>
+                        <button class="add-day-task-btn" onclick="openDayTaskModal(1)">+</button>
+                    </div>
+                    <div class="tasks-list" id="tasks-list-1"></div>
+                </div>
+                <div class="day-footer">
+                    <div class="footer-stat">
+                        <span class="stat-label">Completed</span>
+                        <span class="stat-value completed" id="completed-1">0</span>
+                    </div>
+                    <div class="footer-stat">
+                        <span class="stat-label">Not Completed</span>
+                        <span class="stat-value not-completed" id="not-completed-1">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tuesday -->
+            <div class="day-card glass-panel" data-day="2">
+                <div class="day-header">
+                    <span class="day-name">Tuesday</span>
+                    <span class="day-date" id="day-date-2">--/--/----</span>
+                </div>
+                <div class="day-progress-circle" id="day-progress-2">
+                    <span class="progress-value">0%</span>
+                </div>
+                <div class="day-tasks">
+                    <div class="tasks-header">
+                        <span>Tasks</span>
+                        <button class="add-day-task-btn" onclick="openDayTaskModal(2)">+</button>
+                    </div>
+                    <div class="tasks-list" id="tasks-list-2"></div>
+                </div>
+                <div class="day-footer">
+                    <div class="footer-stat">
+                        <span class="stat-label">Completed</span>
+                        <span class="stat-value completed" id="completed-2">0</span>
+                    </div>
+                    <div class="footer-stat">
+                        <span class="stat-label">Not Completed</span>
+                        <span class="stat-value not-completed" id="not-completed-2">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wednesday -->
+            <div class="day-card glass-panel" data-day="3">
+                <div class="day-header">
+                    <span class="day-name">Wednesday</span>
+                    <span class="day-date" id="day-date-3">--/--/----</span>
+                </div>
+                <div class="day-progress-circle" id="day-progress-3">
+                    <span class="progress-value">0%</span>
+                </div>
+                <div class="day-tasks">
+                    <div class="tasks-header">
+                        <span>Tasks</span>
+                        <button class="add-day-task-btn" onclick="openDayTaskModal(3)">+</button>
+                    </div>
+                    <div class="tasks-list" id="tasks-list-3"></div>
+                </div>
+                <div class="day-footer">
+                    <div class="footer-stat">
+                        <span class="stat-label">Completed</span>
+                        <span class="stat-value completed" id="completed-3">0</span>
+                    </div>
+                    <div class="footer-stat">
+                        <span class="stat-label">Not Completed</span>
+                        <span class="stat-value not-completed" id="not-completed-3">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thursday -->
+            <div class="day-card glass-panel" data-day="4">
+                <div class="day-header">
+                    <span class="day-name">Thursday</span>
+                    <span class="day-date" id="day-date-4">--/--/----</span>
+                </div>
+                <div class="day-progress-circle" id="day-progress-4">
+                    <span class="progress-value">0%</span>
+                </div>
+                <div class="day-tasks">
+                    <div class="tasks-header">
+                        <span>Tasks</span>
+                        <button class="add-day-task-btn" onclick="openDayTaskModal(4)">+</button>
+                    </div>
+                    <div class="tasks-list" id="tasks-list-4"></div>
+                </div>
+                <div class="day-footer">
+                    <div class="footer-stat">
+                        <span class="stat-label">Completed</span>
+                        <span class="stat-value completed" id="completed-4">0</span>
+                    </div>
+                    <div class="footer-stat">
+                        <span class="stat-label">Not Completed</span>
+                        <span class="stat-value not-completed" id="not-completed-4">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Friday -->
+            <div class="day-card glass-panel" data-day="5">
+                <div class="day-header">
+                    <span class="day-name">Friday</span>
+                    <span class="day-date" id="day-date-5">--/--/----</span>
+                </div>
+                <div class="day-progress-circle" id="day-progress-5">
+                    <span class="progress-value">0%</span>
+                </div>
+                <div class="day-tasks">
+                    <div class="tasks-header">
+                        <span>Tasks</span>
+                        <button class="add-day-task-btn" onclick="openDayTaskModal(5)">+</button>
+                    </div>
+                    <div class="tasks-list" id="tasks-list-5"></div>
+                </div>
+                <div class="day-footer">
+                    <div class="footer-stat">
+                        <span class="stat-label">Completed</span>
+                        <span class="stat-value completed" id="completed-5">0</span>
+                    </div>
+                    <div class="footer-stat">
+                        <span class="stat-label">Not Completed</span>
+                        <span class="stat-value not-completed" id="not-completed-5">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Saturday -->
+            <div class="day-card glass-panel" data-day="6">
+                <div class="day-header">
+                    <span class="day-name">Saturday</span>
+                    <span class="day-date" id="day-date-6">--/--/----</span>
+                </div>
+                <div class="day-progress-circle" id="day-progress-6">
+                    <span class="progress-value">0%</span>
+                </div>
+                <div class="day-tasks">
+                    <div class="tasks-header">
+                        <span>Tasks</span>
+                        <button class="add-day-task-btn" onclick="openDayTaskModal(6)">+</button>
+                    </div>
+                    <div class="tasks-list" id="tasks-list-6"></div>
+                </div>
+                <div class="day-footer">
+                    <div class="footer-stat">
+                        <span class="stat-label">Completed</span>
+                        <span class="stat-value completed" id="completed-6">0</span>
+                    </div>
+                    <div class="footer-stat">
+                        <span class="stat-label">Not Completed</span>
+                        <span class="stat-value not-completed" id="not-completed-6">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Task Modal -->
+    <div class="modal-overlay" id="day-task-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title" id="day-modal-title">Add Task</span>
+                <button class="close-btn" onclick="closeDayTaskModal()">×</button>
+            </div>
+            <form id="day-task-form" onsubmit="saveDayTask(event)">
+                <input type="hidden" id="day-task-day-index" value="">
+                <input type="hidden" id="day-task-id" value="">
+                
+                <div class="form-group">
+                    <label class="form-label">Task Name</label>
+                    <input type="text" class="form-input" id="day-task-name" placeholder="Enter task..." required>
+                </div>
+
+                <button type="submit" class="auth-btn">Save Task</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>INTELLIGENCE SYSTEM v.2 // WEEKLY PLANNER ENGINE</p>
+    </footer>
+
+    <script>
+        // ========== WEEKLY PLANNER CORE ENGINE ==========
+        
+        let weeklyTasksData = {};
+        let currentUid = null;
+        let currentWeekStart = null;
+        let db = null;
+        let weeklyBarChart = null;
+
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const quotes = [
+            '"Inspiration comes only during work"',
+            '"The secret of getting ahead is getting started"',
+            '"Small progress is still progress"',
+            '"Plan your work, work your plan"',
+            '"Focus on progress, not perfection"',
+            '"Every accomplishment starts with the decision to try"',
+            '"Success is the sum of small efforts repeated daily"'
+        ];
+
+        function getDb() {
+            if (!db) {
+                db = firebase.firestore();
+            }
+            return db;
+        }
+
+        // Initialize Weekly Planner
+        async function initWeeklyPlanner(uid) {
+            currentUid = uid;
+            
+            // Set random quote
+            document.getElementById('motivational-quote').innerText = quotes[Math.floor(Math.random() * quotes.length)];
+            
+            // Set current week (starting from Sunday)
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            currentWeekStart = new Date(today);
+            currentWeekStart.setDate(today.getDate() - dayOfWeek);
+            currentWeekStart.setHours(0, 0, 0, 0);
+            
+            document.getElementById('week-start-date').value = formatDateInput(currentWeekStart);
+            
+            updateWeekDates();
+            await loadWeeklyTasks();
+        }
+
+        function formatDateInput(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function formatDisplayDate(date) {
+            return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
+        function updateWeekDates() {
+            for (let i = 0; i < 7; i++) {
+                const dayDate = new Date(currentWeekStart);
+                dayDate.setDate(currentWeekStart.getDate() + i);
+                document.getElementById(`day-date-${i}`).innerText = formatDisplayDate(dayDate);
+            }
+        }
+
+        function changeWeek() {
+            const dateInput = document.getElementById('week-start-date').value;
+            if (dateInput) {
+                const selectedDate = new Date(dateInput);
+                const dayOfWeek = selectedDate.getDay();
+                currentWeekStart = new Date(selectedDate);
+                currentWeekStart.setDate(selectedDate.getDate() - dayOfWeek);
+                currentWeekStart.setHours(0, 0, 0, 0);
+                
+                updateWeekDates();
+                loadWeeklyTasks();
+            }
+        }
+
+        function getWeekId() {
+            return `week_${formatDateInput(currentWeekStart)}`;
+        }
+
+        // Load Weekly Tasks
+        async function loadWeeklyTasks() {
+            if (!currentUid) return;
+
+            const syncStatus = document.getElementById('sync-status');
+            if (syncStatus) syncStatus.innerText = '// Loading...';
+
+            try {
+                const weekId = getWeekId();
+                const docRef = getDb().collection('users').doc(currentUid).collection('weeklyPlanner').doc(weekId);
+                const doc = await docRef.get();
+                
+                if (doc.exists) {
+                    weeklyTasksData = doc.data().days || {};
+                } else {
+                    weeklyTasksData = {};
+                    for (let i = 0; i < 7; i++) {
+                        weeklyTasksData[i] = [];
+                    }
+                }
+                
+                renderAllDays();
+                updateOverallProgress();
+                
+                if (syncStatus) {
+                    syncStatus.innerText = '// Synced';
+                    setTimeout(() => { syncStatus.innerText = ''; }, 2000);
+                }
+            } catch (e) {
+                console.error("Error loading weekly tasks:", e);
+                if (syncStatus) syncStatus.innerText = '// Error';
+            }
+        }
+
+        // Render All Days
+        function renderAllDays() {
+            for (let i = 0; i < 7; i++) {
+                renderDayTasks(i);
+            }
+        }
+
+        // Render Day Tasks
+        function renderDayTasks(dayIndex) {
+            const tasks = weeklyTasksData[dayIndex] || [];
+            const tasksList = document.getElementById(`tasks-list-${dayIndex}`);
+            tasksList.innerHTML = '';
+
+            tasks.forEach((task, idx) => {
+                const taskItem = document.createElement('div');
+                taskItem.className = `task-item ${task.completed ? 'completed' : ''}`;
+                taskItem.innerHTML = `
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} 
+                           onchange="toggleDayTask(${dayIndex}, ${idx})">
+                    <span class="task-text">${task.name}</span>
+                    <button class="delete-task-btn" onclick="deleteDayTask(${dayIndex}, ${idx})">×</button>
+                `;
+                tasksList.appendChild(taskItem);
+            });
+
+            // Update day stats
+            const completed = tasks.filter(t => t.completed).length;
+            const notCompleted = tasks.length - completed;
+            const percentage = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
+
+            document.getElementById(`completed-${dayIndex}`).innerText = completed;
+            document.getElementById(`not-completed-${dayIndex}`).innerText = notCompleted;
+            
+            // Update progress circle
+            const progressCircle = document.getElementById(`day-progress-${dayIndex}`);
+            progressCircle.querySelector('.progress-value').innerText = percentage + '%';
+            progressCircle.style.background = `conic-gradient(#4ade80 ${percentage * 3.6}deg, #e5e7eb ${percentage * 3.6}deg)`;
+        }
+
+        // Update Overall Progress
+        function updateOverallProgress() {
+            let totalTasks = 0;
+            let completedTasks = 0;
+            const dailyCounts = [];
+
+            for (let i = 0; i < 7; i++) {
+                const tasks = weeklyTasksData[i] || [];
+                totalTasks += tasks.length;
+                const dayCompleted = tasks.filter(t => t.completed).length;
+                completedTasks += dayCompleted;
+                dailyCounts.push(tasks.length);
+            }
+
+            const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+            document.getElementById('completed-tasks').innerText = completedTasks;
+            document.getElementById('total-tasks').innerText = totalTasks;
+            
+            const progressCircle = document.getElementById('overall-progress-circle');
+            progressCircle.querySelector('.progress-value').innerText = percentage + '%';
+            progressCircle.style.background = `conic-gradient(#4ade80 ${percentage * 3.6}deg, #e5e7eb ${percentage * 3.6}deg)`;
+
+            // Update bar chart
+            renderWeeklyBarChart(dailyCounts);
+        }
+
+        // Render Weekly Bar Chart
+        function renderWeeklyBarChart(data) {
+            const ctx = document.getElementById('weekly-bar-chart');
+            if (!ctx) return;
+
+            if (weeklyBarChart) weeklyBarChart.destroy();
+
+            weeklyBarChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    datasets: [{
+                        data: data,
+                        backgroundColor: '#4ade80',
+                        borderRadius: 4,
+                        barThickness: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { 
+                            grid: { display: false },
+                            ticks: { font: { size: 10 } }
+                        },
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: '#f3f4f6' },
+                            ticks: { stepSize: 2 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Modal Controls
+        function openDayTaskModal(dayIndex) {
+            const modal = document.getElementById('day-task-modal');
+            document.getElementById('day-task-form').reset();
+            document.getElementById('day-task-day-index').value = dayIndex;
+            document.getElementById('day-task-id').value = '';
+            document.getElementById('day-modal-title').innerText = `Add Task - ${dayNames[dayIndex]}`;
+            modal.classList.add('active');
+        }
+
+        function closeDayTaskModal() {
+            document.getElementById('day-task-modal').classList.remove('active');
+        }
+
+        // Save Day Task
+        async function saveDayTask(event) {
+            event.preventDefault();
+            
+            const dayIndex = parseInt(document.getElementById('day-task-day-index').value);
+            const taskName = document.getElementById('day-task-name').value;
+
+            if (!weeklyTasksData[dayIndex]) {
+                weeklyTasksData[dayIndex] = [];
+            }
+
+            weeklyTasksData[dayIndex].push({
+                name: taskName,
+                completed: false,
+                createdAt: new Date().toISOString()
+            });
+
+            await saveWeeklyData();
+            closeDayTaskModal();
+            renderDayTasks(dayIndex);
+            updateOverallProgress();
+        }
+
+        // Toggle Day Task
+        async function toggleDayTask(dayIndex, taskIndex) {
+            if (weeklyTasksData[dayIndex] && weeklyTasksData[dayIndex][taskIndex]) {
+                weeklyTasksData[dayIndex][taskIndex].completed = !weeklyTasksData[dayIndex][taskIndex].completed;
+                await saveWeeklyData();
+                renderDayTasks(dayIndex);
+                updateOverallProgress();
+            }
+        }
+
+        // Delete Day Task
+        async function deleteDayTask(dayIndex, taskIndex) {
+            if (confirm('Delete this task?')) {
+                weeklyTasksData[dayIndex].splice(taskIndex, 1);
+                await saveWeeklyData();
+                renderDayTasks(dayIndex);
+                updateOverallProgress();
+            }
+        }
+
+        // Save Weekly Data
+        async function saveWeeklyData() {
+            if (!currentUid) return;
+
+            const syncStatus = document.getElementById('sync-status');
+            if (syncStatus) syncStatus.innerText = '// Saving...';
+
+            try {
+                const weekId = getWeekId();
+                await getDb().collection('users').doc(currentUid).collection('weeklyPlanner').doc(weekId).set({
+                    days: weeklyTasksData,
+                    weekStart: formatDateInput(currentWeekStart),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+                if (syncStatus) {
+                    syncStatus.innerText = '// Saved';
+                    setTimeout(() => { syncStatus.innerText = ''; }, 2000);
+                }
+            } catch (e) {
+                console.error("Error saving weekly data:", e);
+                if (syncStatus) syncStatus.innerText = '// Error';
+            }
+        }
+
+        // Expose functions globally
+        window.initWeeklyPlanner = initWeeklyPlanner;
+        window.changeWeek = changeWeek;
+        window.openDayTaskModal = openDayTaskModal;
+        window.closeDayTaskModal = closeDayTaskModal;
+        window.saveDayTask = saveDayTask;
+        window.toggleDayTask = toggleDayTask;
+        window.deleteDayTask = deleteDayTask;
+    </script>
+</body>
+</html>

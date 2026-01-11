@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Intelligence | INTELLIGENCE™</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <script type="module">
+        import firebaseConfig from './firebase-config.js';
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'auth.html';
+            } else {
+                document.getElementById('user-email').innerText = user.email;
+            }
+        });
+
+        window.logout = () => {
+            auth.signOut().then(() => {
+                window.location.href = 'auth.html';
+            });
+        };
+    </script>
+</head>
+<body>
+    <div class="bg-ambient"></div>
+
+    <header class="container">
+        <nav class="system-nav">
+            <div class="logo"><a href="index.html" style="text-decoration: none; color: inherit;">Intelligence</a> / Budget</div>
+            <div class="system-status">
+                <span class="status-indicator"></span>
+                <span>Allocation Protocol: <span id="user-email">...</span></span>
+                <button onclick="logout()" style="background: none; border: 1px solid var(--glass-border); color: var(--text-muted); font-size: 0.6rem; padding: 4px 8px; cursor: pointer; border-radius: 4px; margin-left: 10px;">LOGOUT</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="hero" style="padding: 60px 0;">
+            <span class="hero-meta">RESOURCE ALLOCATION</span>
+            <h1 class="hero-title" style="font-size: 3.5rem;">Total <strong>Awareness.</strong></h1>
+            <p class="hero-description">Spending behavior visualized without judgment. Precise category mapping to ensure every resource aligns with your core mission.</p>
+        </section>
+
+        <div class="dashboard-grid">
+            <!-- Utilization -->
+            <div class="glass-panel tracker-card card-slim">
+                <div class="card-header">
+                    <div>
+                        <span class="card-title">Monthly Limit</span>
+                        <div class="card-value">72%</div>
+                        <div class="card-subtext">Optimized utilization</div>
+                    </div>
+                </div>
+                <div class="viz-container">
+                    <canvas id="budget-utilization-detailed"></canvas>
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="glass-panel tracker-card card-wide">
+                <div class="card-header">
+                    <div>
+                        <span class="card-title">Category Intelligence</span>
+                        <div class="card-subtext">Cross-sector expenditure distribution</div>
+                    </div>
+                </div>
+                <div class="viz-container">
+                    <canvas id="budget-categories-detailed"></canvas>
+                </div>
+            </div>
+
+            <!-- Trend Comparison -->
+            <div class="glass-panel tracker-card card-full">
+                <div class="card-header">
+                    <div>
+                        <span class="card-title">Temporal Trend</span>
+                        <div class="card-subtext">Current month vs. Historical average comparison</div>
+                    </div>
+                </div>
+                <div class="viz-container" style="height: 300px;">
+                    <canvas id="budget-trend-detailed"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>INTELLIGENCE SYSTEM © 2026 // ALLOCATION_LOG_04</p>
+        </div>
+    </footer>
+
+    <script src="home.js"></script>
+</body>
+</html>

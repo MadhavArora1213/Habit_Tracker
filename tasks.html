@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Planner | INTELLIGENCE™</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script type="module">
+        import firebaseConfig from './firebase-config.js';
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'auth.html';
+            } else {
+                document.getElementById('user-email').innerText = user.email;
+                if (typeof initTaskPlanner === 'function') {
+                    initTaskPlanner(user.uid);
+                }
+            }
+        });
+
+        window.logout = () => {
+            auth.signOut().then(() => {
+                window.location.href = 'auth.html';
+            });
+        };
+    </script>
+</head>
+<body>
+    <div class="bg-ambient"></div>
+
+    <header class="container">
+        <nav class="system-nav">
+            <div class="logo"><a href="index.html" style="text-decoration: none; color: inherit;">Intelligence</a> / Tasks</div>
+            <div class="system-status">
+                <span class="status-indicator"></span>
+                <span>TASK ENGINE: ACTIVE // <span id="user-email">...</span></span>
+                <span id="sync-status" style="color: var(--accent-gold);"></span>
+                <button onclick="logout()" style="background: none; border: 1px solid var(--glass-border); color: var(--text-muted); font-size: 0.6rem; padding: 4px 8px; cursor: pointer; border-radius: 4px; margin-left: 10px;">LOGOUT</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="tracker-main container">
+        <!-- Stats Header -->
+        <div class="task-stats-header">
+            <div class="stat-card date-card">
+                <span class="stat-label">Date</span>
+                <div class="stat-value" id="current-date">--/--/----</div>
+            </div>
+            <h1 class="task-main-title">TASK LIST</h1>
+            <div class="stat-card">
+                <span class="stat-label">Today</span>
+                <div class="stat-value accent" id="tasks-today">0</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Total Tasks</span>
+                <div class="stat-value" id="tasks-total">0</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Overdue</span>
+                <div class="stat-value danger" id="tasks-overdue">0</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Not Completed</span>
+                <div class="stat-value warning" id="tasks-incomplete">0</div>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="task-progress-section">
+            <div class="progress-label" id="progress-percent">0%</div>
+            <div class="task-progress-bar">
+                <div class="task-progress-fill" id="progress-fill" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- Task Table -->
+        <div class="task-table-container glass-panel">
+            <div class="task-table-header">
+                <button class="add-task-btn" onclick="openTaskModal()">
+                    <span>+</span> Add Task
+                </button>
+                <div class="filter-controls">
+                    <select id="filter-status" onchange="filterTasks()">
+                        <option value="all">All Status</option>
+                        <option value="not-started">Not Started</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <select id="filter-priority" onchange="filterTasks()">
+                        <option value="all">All Priority</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                        <option value="optional">Optional</option>
+                    </select>
+                    <select id="filter-category" onchange="filterTasks()">
+                        <option value="all">All Categories</option>
+                        <option value="work">Work</option>
+                        <option value="money">Money</option>
+                        <option value="ideas">Ideas</option>
+                        <option value="chores">Chores</option>
+                        <option value="health">Health</option>
+                        <option value="spirituality">Spirituality</option>
+                        <option value="personal">Personal</option>
+                    </select>
+                </div>
+            </div>
+
+            <table class="task-table">
+                <thead>
+                    <tr>
+                        <th class="col-check"></th>
+                        <th class="col-task">Task</th>
+                        <th class="col-due">Due Date</th>
+                        <th class="col-priority">Priority</th>
+                        <th class="col-status">Status</th>
+                        <th class="col-category">Category</th>
+                        <th class="col-actions"></th>
+                    </tr>
+                </thead>
+                <tbody id="task-table-body">
+                    <!-- Tasks will be rendered here dynamically -->
+                </tbody>
+            </table>
+
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <div class="empty-icon">📋</div>
+                <h3>No Tasks Yet</h3>
+                <p>Start adding tasks to take control of your productivity</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Task Modal -->
+    <div class="modal-overlay" id="task-modal">
+        <div class="modal-card task-modal-card">
+            <div class="modal-header">
+                <span class="modal-title" id="modal-title">New Task</span>
+                <button class="close-btn" onclick="closeTaskModal()">×</button>
+            </div>
+            <form id="task-form" onsubmit="saveTask(event)">
+                <input type="hidden" id="task-id" value="">
+                
+                <div class="form-group">
+                    <label class="form-label">Task Name</label>
+                    <input type="text" class="form-input" id="task-name" placeholder="Enter task description..." required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" class="form-input" id="task-due-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select class="form-input" id="task-priority">
+                            <option value="high">🔴 High</option>
+                            <option value="medium" selected>🟡 Medium</option>
+                            <option value="low">🔵 Low</option>
+                            <option value="optional">⚪ Optional</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select class="form-input" id="task-status">
+                            <option value="not-started">⬇️ Not Started</option>
+                            <option value="in-progress">✍️ In Progress</option>
+                            <option value="completed">✅ Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-input" id="task-category">
+                            <option value="work">💼 Work</option>
+                            <option value="money">💰 Money</option>
+                            <option value="ideas">💡 Ideas</option>
+                            <option value="chores">🧹 Chores</option>
+                            <option value="health">🏃 Health</option>
+                            <option value="spirituality">🙏 Spirituality</option>
+                            <option value="personal">👤 Personal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="auth-btn">Save Task</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>INTELLIGENCE SYSTEM v.2 // TASK ENGINE</p>
+    </footer>
+
+    <script>
+        // ========== TASK PLANNER CORE ENGINE ==========
+        
+        let tasksData = [];
+        let currentUid = null;
+        let db = null;
+
+        // Get Firestore instance (called after Firebase is initialized)
+        function getDb() {
+            if (!db) {
+                db = firebase.firestore();
+            }
+            return db;
+        }
+
+        // Category icons & colors mapping
+        const categoryConfig = {
+            'work': { icon: '💼', color: '#4285f4' },
+            'money': { icon: '💰', color: '#f4b400' },
+            'ideas': { icon: '💡', color: '#9c27b0' },
+            'chores': { icon: '🧹', color: '#607d8b' },
+            'health': { icon: '🏃', color: '#4caf50' },
+            'spirituality': { icon: '🙏', color: '#e91e63' },
+            'personal': { icon: '👤', color: '#00bcd4' }
+        };
+
+        const priorityConfig = {
+            'high': { icon: '🔴', color: '#ef4444', label: 'High' },
+            'medium': { icon: '🟡', color: '#f59e0b', label: 'Medium' },
+            'low': { icon: '🔵', color: '#3b82f6', label: 'Low' },
+            'optional': { icon: '⚪', color: '#9ca3af', label: 'Optional' }
+        };
+
+        const statusConfig = {
+            'not-started': { icon: '⬇️', label: 'Not Started', class: 'status-not-started' },
+            'in-progress': { icon: '✍️', label: 'In Progress', class: 'status-in-progress' },
+            'completed': { icon: '✅', label: 'Completed', class: 'status-completed' }
+        };
+
+        // Initialize Task Planner
+        async function initTaskPlanner(uid) {
+            currentUid = uid;
+            updateCurrentDate();
+            await loadTasks();
+        }
+
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+            document.getElementById('current-date').innerText = now.toLocaleDateString('en-GB', options);
+        }
+
+        // Load Tasks from Firebase
+        async function loadTasks() {
+            if (!currentUid) return;
+
+            const syncStatus = document.getElementById('sync-status');
+            if (syncStatus) syncStatus.innerText = '// Loading...';
+
+            try {
+                const snapshot = await getDb().collection('users').doc(currentUid).collection('tasks').orderBy('dueDate', 'asc').get();
+                tasksData = [];
+                snapshot.forEach(doc => {
+                    tasksData.push({ id: doc.id, ...doc.data() });
+                });
+                
+                renderTasks();
+                updateStats();
+                
+                if (syncStatus) {
+                    syncStatus.innerText = '// Synced';
+                    setTimeout(() => { syncStatus.innerText = ''; }, 2000);
+                }
+            } catch (e) {
+                console.error("Error loading tasks:", e);
+                if (syncStatus) syncStatus.innerText = '// Error';
+            }
+        }
+
+        // Render Tasks Table
+        function renderTasks() {
+            const tbody = document.getElementById('task-table-body');
+            const emptyState = document.getElementById('empty-state');
+            const filterStatus = document.getElementById('filter-status').value;
+            const filterPriority = document.getElementById('filter-priority').value;
+            const filterCategory = document.getElementById('filter-category').value;
+
+            // Filter tasks
+            let filteredTasks = tasksData.filter(task => {
+                if (filterStatus !== 'all' && task.status !== filterStatus) return false;
+                if (filterPriority !== 'all' && task.priority !== filterPriority) return false;
+                if (filterCategory !== 'all' && task.category !== filterCategory) return false;
+                return true;
+            });
+
+            if (filteredTasks.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            tbody.innerHTML = '';
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            filteredTasks.forEach(task => {
+                const tr = document.createElement('tr');
+                const isCompleted = task.status === 'completed';
+                const dueDate = new Date(task.dueDate);
+                dueDate.setHours(0, 0, 0, 0);
+                const isOverdue = dueDate < today && !isCompleted;
+
+                // Row classes
+                tr.className = `task-row ${isCompleted ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}`;
+
+                // Checkbox
+                const tdCheck = document.createElement('td');
+                tdCheck.className = 'col-check';
+                tdCheck.innerHTML = `
+                    <div class="task-checkbox ${isCompleted ? 'checked' : ''}" onclick="toggleTaskComplete('${task.id}')">
+                        ${isCompleted ? '✓' : ''}
+                    </div>`;
+                tr.appendChild(tdCheck);
+
+                // Task Name
+                const tdTask = document.createElement('td');
+                tdTask.className = 'col-task';
+                tdTask.innerHTML = `<span class="task-name ${isCompleted ? 'strikethrough' : ''}">${task.name}</span>`;
+                tr.appendChild(tdTask);
+
+                // Due Date
+                const tdDue = document.createElement('td');
+                tdDue.className = 'col-due';
+                tdDue.innerHTML = `<span class="${isOverdue ? 'overdue-date' : ''}">${formatDate(task.dueDate)}</span>`;
+                tr.appendChild(tdDue);
+
+                // Priority
+                const priority = priorityConfig[task.priority] || priorityConfig['medium'];
+                const tdPriority = document.createElement('td');
+                tdPriority.className = 'col-priority';
+                tdPriority.innerHTML = `
+                    <span class="priority-badge" style="--priority-color: ${priority.color}">
+                        <span class="priority-dot" style="background: ${priority.color}"></span>
+                        ${priority.label}
+                    </span>`;
+                tr.appendChild(tdPriority);
+
+                // Status
+                const status = statusConfig[task.status] || statusConfig['not-started'];
+                const tdStatus = document.createElement('td');
+                tdStatus.className = 'col-status';
+                tdStatus.innerHTML = `
+                    <select class="status-select ${status.class}" onchange="updateTaskStatus('${task.id}', this.value)">
+                        <option value="not-started" ${task.status === 'not-started' ? 'selected' : ''}>⬇️ Not Started</option>
+                        <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>✍️ In Progress</option>
+                        <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>✅ Completed</option>
+                    </select>`;
+                tr.appendChild(tdStatus);
+
+                // Category
+                const category = categoryConfig[task.category] || categoryConfig['personal'];
+                const tdCategory = document.createElement('td');
+                tdCategory.className = 'col-category';
+                tdCategory.innerHTML = `
+                    <span class="category-badge" style="--cat-color: ${category.color}">
+                        ${category.icon} ${capitalizeFirst(task.category)}
+                    </span>`;
+                tr.appendChild(tdCategory);
+
+                // Actions
+                const tdActions = document.createElement('td');
+                tdActions.className = 'col-actions';
+                tdActions.innerHTML = `
+                    <button class="action-btn edit-btn" onclick="editTask('${task.id}')" title="Edit">✏️</button>
+                    <button class="action-btn delete-btn" onclick="deleteTask('${task.id}')" title="Delete">🗑️</button>`;
+                tr.appendChild(tdActions);
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Update Statistics
+        function updateStats() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = today.toISOString().split('T')[0];
+
+            const totalTasks = tasksData.length;
+            const completedTasks = tasksData.filter(t => t.status === 'completed').length;
+            const todayTasks = tasksData.filter(t => t.dueDate === todayStr).length;
+            const overdueTasks = tasksData.filter(t => {
+                const due = new Date(t.dueDate);
+                due.setHours(0, 0, 0, 0);
+                return due < today && t.status !== 'completed';
+            }).length;
+            const incompleteTasks = tasksData.filter(t => t.status !== 'completed').length;
+
+            document.getElementById('tasks-total').innerText = totalTasks;
+            document.getElementById('tasks-today').innerText = todayTasks;
+            document.getElementById('tasks-overdue').innerText = overdueTasks;
+            document.getElementById('tasks-incomplete').innerText = incompleteTasks;
+
+            // Progress
+            const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            document.getElementById('progress-percent').innerText = progress + '%';
+            document.getElementById('progress-fill').style.width = progress + '%';
+        }
+
+        // Filter Tasks
+        function filterTasks() {
+            renderTasks();
+        }
+
+        // Modal Controls
+        function openTaskModal(taskId = null) {
+            const modal = document.getElementById('task-modal');
+            const form = document.getElementById('task-form');
+            const title = document.getElementById('modal-title');
+            
+            form.reset();
+            document.getElementById('task-id').value = '';
+
+            if (taskId) {
+                // Edit mode
+                const task = tasksData.find(t => t.id === taskId);
+                if (task) {
+                    title.innerText = 'Edit Task';
+                    document.getElementById('task-id').value = task.id;
+                    document.getElementById('task-name').value = task.name;
+                    document.getElementById('task-due-date').value = task.dueDate;
+                    document.getElementById('task-priority').value = task.priority;
+                    document.getElementById('task-status').value = task.status;
+                    document.getElementById('task-category').value = task.category;
+                }
+            } else {
+                title.innerText = 'New Task';
+                // Set default date to today
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('task-due-date').value = today;
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('task-modal').classList.remove('active');
+        }
+
+        function editTask(taskId) {
+            openTaskModal(taskId);
+        }
+
+        // Save Task
+        async function saveTask(event) {
+            event.preventDefault();
+            
+            const taskId = document.getElementById('task-id').value;
+            const taskData = {
+                name: document.getElementById('task-name').value,
+                dueDate: document.getElementById('task-due-date').value,
+                priority: document.getElementById('task-priority').value,
+                status: document.getElementById('task-status').value,
+                category: document.getElementById('task-category').value,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            const syncStatus = document.getElementById('sync-status');
+            if (syncStatus) syncStatus.innerText = '// Saving...';
+
+            try {
+                const tasksRef = getDb().collection('users').doc(currentUid).collection('tasks');
+                
+                if (taskId) {
+                    // Update existing
+                    await tasksRef.doc(taskId).update(taskData);
+                } else {
+                    // Create new
+                    taskData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await tasksRef.add(taskData);
+                }
+
+                closeTaskModal();
+                await loadTasks();
+                
+                if (syncStatus) {
+                    syncStatus.innerText = '// Saved';
+                    setTimeout(() => { syncStatus.innerText = ''; }, 2000);
+                }
+            } catch (e) {
+                console.error("Error saving task:", e);
+                if (syncStatus) syncStatus.innerText = '// Error';
+            }
+        }
+
+        // Toggle Task Complete
+        async function toggleTaskComplete(taskId) {
+            const task = tasksData.find(t => t.id === taskId);
+            if (!task) return;
+
+            const newStatus = task.status === 'completed' ? 'not-started' : 'completed';
+            await updateTaskStatus(taskId, newStatus);
+        }
+
+        // Update Task Status
+        async function updateTaskStatus(taskId, newStatus) {
+            const syncStatus = document.getElementById('sync-status');
+            if (syncStatus) syncStatus.innerText = '// Updating...';
+
+            try {
+                await getDb().collection('users').doc(currentUid).collection('tasks').doc(taskId).update({
+                    status: newStatus,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                await loadTasks();
+            } catch (e) {
+                console.error("Error updating task:", e);
+                if (syncStatus) syncStatus.innerText = '// Error';
+            }
+        }
+
+        // Delete Task
+        async function deleteTask(taskId) {
+            if (!confirm('Delete this task?')) return;
+
+            const syncStatus = document.getElementById('sync-status');
+            if (syncStatus) syncStatus.innerText = '// Deleting...';
+
+            try {
+                await getDb().collection('users').doc(currentUid).collection('tasks').doc(taskId).delete();
+                await loadTasks();
+            } catch (e) {
+                console.error("Error deleting task:", e);
+                if (syncStatus) syncStatus.innerText = '// Error';
+            }
+        }
+
+        // Utility Functions
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // Expose functions globally
+        window.initTaskPlanner = initTaskPlanner;
+        window.openTaskModal = openTaskModal;
+        window.closeTaskModal = closeTaskModal;
+        window.saveTask = saveTask;
+        window.editTask = editTask;
+        window.deleteTask = deleteTask;
+        window.toggleTaskComplete = toggleTaskComplete;
+        window.updateTaskStatus = updateTaskStatus;
+        window.filterTasks = filterTasks;
+    </script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Tracker | INTELLIGENCE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script type="module">
+        import firebaseConfig from './firebase-config.js';
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'auth.html';
+            } else {
+                document.getElementById('user-email').innerText = user.email;
+                if (typeof initFinancialTracker === 'function') {
+                    initFinancialTracker(user.uid);
+                }
+            }
+        });
+
+        window.logout = () => {
+            auth.signOut().then(() => {
+                window.location.href = 'auth.html';
+            });
+        };
+    </script>
+</head>
+<body class="financial-page">
+    <div class="bg-ambient"></div>
+
+    <header class="container">
+        <nav class="system-nav">
+            <div class="logo"><a href="index.html" style="text-decoration: none; color: inherit;">Intelligence</a> / Financial</div>
+            <div class="system-status">
+                <span class="status-indicator"></span>
+                <span>Node: Vault-01 // <span id="user-email">...</span></span>
+                <button onclick="logout()" style="background: none; border: 1px solid var(--glass-border); color: var(--text-muted); font-size: 0.6rem; padding: 4px 8px; cursor: pointer; border-radius: 4px; margin-left: 10px;">LOGOUT</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container financial-dashboard">
+        <!-- Dashboard Summary Header -->
+        <header class="fin-summary-header">
+            <div class="month-label">
+                <h2 id="current-month-display">November 2026</h2>
+                <span id="sync-status" style="font-size: 0.6rem; color: var(--accent-gold); font-weight: 800; text-transform: uppercase;"></span>
+                <div style="display: flex; gap: 15px; align-items: center; margin-top: 15px;">
+                    <button class="btn-premium" onclick="openFinModal('expense')" style="padding: 10px 20px; font-size: 0.7rem;">+ NEW TRANSACTION</button>
+                    <div class="starting-amount-box">
+                        <span>Starting Amount</span>
+                        <div class="value-box" id="starting-amount-display" style="cursor: pointer;" onclick="updateStartingAmount()">₹0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-grid" id="summary-grid-injected">
+                <!-- Data injected by JS -->
+                <div class="summary-item">
+                    <div class="item-label green-bg">Income</div>
+                    <div class="item-values">
+                        <div class="sub-val"><span>Plan</span><strong id="sum-income-plan">0.00</strong></div>
+                        <div class="sub-val"><span>Actual</span><strong id="sum-income-actual">0.00</strong></div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="item-label green-bg">Expenses</div>
+                    <div class="item-values">
+                        <div class="sub-val"><span>Plan</span><strong id="sum-expense-plan">0.00</strong></div>
+                        <div class="sub-val"><span>Actual</span><strong id="sum-expense-actual">0.00</strong></div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="item-label green-bg">Balance</div>
+                    <div class="item-values">
+                        <div class="sub-val"><span>Plan</span><strong id="sum-balance-plan">0.00</strong></div>
+                        <div class="sub-val"><span>Actual</span><strong id="sum-balance-actual">0.00</strong></div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="item-label green-bg">Total Balance</div>
+                    <div class="item-values">
+                        <div class="sub-val"><span>Plan</span><strong id="sum-total-plan">0.00</strong></div>
+                        <div class="sub-val"><span>Actual</span><strong id="sum-total-actual">0.00</strong></div>
+                    </div>
+                </div>
+                <div class="summary-item small-summary">
+                    <div class="item-label green-bg">Debts</div>
+                    <div class="item-values">
+                        <div class="sub-val single"><strong id="sum-debts-total">0.00</strong></div>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="item-label green-bg">Trends</div>
+                    <div class="item-values">
+                        <div class="sub-val"><span>Plan</span><strong>0</strong></div>
+                        <div class="sub-val"><span>Actual</span><strong>0</strong></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+
+
+        <!-- Charts Dashboard -->
+        <section class="fin-charts-section">
+            <div class="fin-card">
+                <div class="fin-card-header green-bg">Expenses by Category</div>
+                <div class="fin-card-body">
+                    <canvas id="expenses-by-category-chart"></canvas>
+                </div>
+            </div>
+            <div class="fin-card">
+                <div class="fin-card-header green-bg">Plan / Actual</div>
+                <div class="fin-card-body">
+                    <canvas id="plan-actual-chart"></canvas>
+                </div>
+            </div>
+            <div class="fin-card">
+                <div class="fin-card-header green-bg">Income by Category</div>
+                <div class="fin-card-body">
+                    <canvas id="income-by-category-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tables Section -->
+        <section class="fin-tables-section">
+            <div class="fin-card">
+                <div class="fin-card-header green-bg" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Planned Expenses</span>
+                    <button class="add-fin-btn" onclick="openFinModal('expense')">+</button>
+                </div>
+                <div class="fin-table-container">
+                    <table class="fin-table">
+                        <thead>
+                            <tr>
+                                <th>Source</th>
+                                <th>Plan</th>
+                                <th>Actual</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="expense-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="fin-card">
+                <div class="fin-card-header green-bg" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Planned Income</span>
+                    <button class="add-fin-btn" onclick="openFinModal('income')">+</button>
+                </div>
+                <div class="fin-table-container">
+                    <table class="fin-table">
+                        <thead>
+                            <tr>
+                                <th>Source</th>
+                                <th>Plan</th>
+                                <th>Actual</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="income-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="fin-card">
+                <div class="fin-card-header green-bg" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Debts</span>
+                    <button class="add-fin-btn" onclick="openFinModal('debt')">+</button>
+                </div>
+                <div class="fin-table-container">
+                    <table class="fin-table">
+                        <thead>
+                            <tr>
+                                <th>Source</th>
+                                <th>Debt</th>
+                                <th>Paid Out</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="debt-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Financial Entry Modal -->
+        <div id="fin-modal" class="modal-overlay">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="fin-modal-title">Add Entry</h3>
+                    <button class="close-btn" onclick="closeFinModal()">×</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" id="label-source">Source Name</label>
+                    <input type="text" id="fin-source" class="form-input" placeholder="e.g., Rent">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" id="label-plan">Planned Amount</label>
+                    <input type="number" id="fin-plan" class="form-input" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" id="label-actual">Actual Amount</label>
+                    <input type="number" id="fin-actual" class="form-input" value="0">
+                </div>
+                <button class="auth-btn" style="margin-top: 10px;" onclick="saveFinEntry()">Save Entry</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>INTELLIGENCE SYSTEM © 2026 // FINANCIAL_MODULE_ACTIVE</p>
+        </div>
+    </footer>
+
+    <script src="home.js"></script>
+</body>
+</html>

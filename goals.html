@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategic Goals | INTELLIGENCE™</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="bg-ambient"></div>
+
+    <header class="container">
+        <nav class="system-nav">
+            <div class="logo"><a href="index.html" style="text-decoration: none; color: inherit;">Intelligence</a> / Goals</div>
+            <div class="system-status">
+                <span class="status-indicator"></span>
+                <span>Vision Protocol: Alignment Optimal</span>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="hero" style="padding: 100px 0;">
+            <span class="hero-meta">STRATEGIC BLUEPRINT</span>
+            <h1 class="hero-title" style="font-size: 4rem;">Long-Term <strong>Vision.</strong></h1>
+            <p class="hero-description">Transforming abstract ambitions into inevitable milestones. A data-driven vision board for serious builders.</p>
+        </section>
+
+        <div class="dashboard-grid">
+            <!-- Progress Curve -->
+            <div class="glass-panel tracker-card card-wide">
+                <div class="card-header">
+                    <div>
+                        <span class="card-title">Completion Momentum</span>
+                        <div class="card-value">84%</div>
+                        <div class="card-subtext">Aggregated progress toward core missions</div>
+                    </div>
+                </div>
+                <div class="viz-container" style="height: 300px;">
+                    <canvas id="goals-momentum-detailed"></canvas>
+                </div>
+            </div>
+
+            <!-- Time to Deadline -->
+            <div class="glass-panel tracker-card card-slim">
+                <div class="card-header">
+                    <div>
+                        <span class="card-title">Temporal Runway</span>
+                        <div class="card-value">42 Days</div>
+                        <div class="card-subtext">Remaining until Q1 Milestone</div>
+                    </div>
+                </div>
+                <div class="viz-container">
+                    <canvas id="goals-timeline-detailed"></canvas>
+                </div>
+            </div>
+
+            <!-- Milestones -->
+            <div class="glass-panel tracker-card card-full">
+                <div class="card-header">
+                    <div>
+                        <span class="card-title">Milestone Architecture</span>
+                        <div class="card-subtext">Segmented breakdown of mission objectives</div>
+                    </div>
+                </div>
+                <div class="milestone-container" style="padding: 40px 0;">
+                    <!-- Visual Milestones -->
+                    <div style="height: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; position: relative; margin-bottom: 20px;">
+                        <div style="width: 84%; height: 100%; background: var(--text-primary); box-shadow: 0 0 20px rgba(255,255,255,0.2); border-radius: 10px;"></div>
+                        <div style="position: absolute; left: 25%; top: -6px; width: 16px; height: 16px; background: var(--bg-system); border: 2px solid var(--text-primary); border-radius: 50%;"></div>
+                        <div style="position: absolute; left: 50%; top: -6px; width: 16px; height: 16px; background: var(--bg-system); border: 2px solid var(--text-primary); border-radius: 50%;"></div>
+                        <div style="position: absolute; left: 75%; top: -6px; width: 16px; height: 16px; background: var(--bg-system); border: 2px solid var(--text-primary); border-radius: 50%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;">
+                        <span>Phase 01</span>
+                        <span>Phase 02</span>
+                        <span>Phase 03</span>
+                        <span>Final objective</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>INTELLIGENCE SYSTEM © 2026 // VISION_STABLE</p>
+        </div>
+    </footer>
+
+    <script src="home.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Intelligence | INTELLIGENCE™</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="bg-ambient"></div>
+
+    <header class="container">
+        <nav class="system-nav">
+            <div class="logo"><a href="index.html" style="text-decoration: none; color: inherit;">Intelligence</a> / Performance</div>
+            <div class="system-status">
+                <span class="status-indicator"></span>
+                <span>Processor: Deep Work Protocol active</span>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="hero" style="padding: 60px 0;">
+            <span class="hero-meta">COGNITIVE OUTPUT</span>
+            <h1 class="hero-title" style="font-size: 3.5rem;">Total <strong>Efficiency.</strong></h1>
+            <p class="hero-description">Time is a non-renewable asset. Quantifying your focus hours and eliminating shallow drag for maximum creative throughput.</p>
+        </section>
+
+        <div class="dashboard-grid">
+            <!-- Daily Time distribution -->
+            <div class="glass-panel tracker-card card-wide">
+                <div class="card-header">
+                    <div>
+                        <span class="card-title">Daily Temporal Signature</span>
+                        <div class="card-subtext">Deep vs Shallow work distribution</div>
+                    </div>
+                </div>
+                <div class="viz-container">
+                    <canvas id="productivity-stacked-detailed"></canvas>
+                </div>
+            </div>
+
+            <!-- Focus vs Distraction -->
+            <div class="glass-panel tracker-card card-slim">
+                <div class="card-header">
+                    <div>
+                        <span class="card-title">Focus Velocity</span>
+                        <div class="card-subtext">Eliminating cognitive drag</div>
+                    </div>
+                </div>
+                <div class="viz-container">
+                    <canvas id="productivity-focus-detailed"></canvas>
+                </div>
+            </div>
+
+            <!-- Weekly Comparison -->
+            <div class="glass-panel tracker-card card-full">
+                <div class="card-header">
+                    <div>
+                        <span class="card-title">Weekly Performance Delta</span>
+                        <div class="card-subtext">Cognitive output compared to previous peak performance</div>
+                    </div>
+                </div>
+                <div class="viz-container" style="height: 300px;">
+                    <canvas id="productivity-weekly-detailed"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>INTELLIGENCE SYSTEM © 2026 // PERFORMANCE_READY</p>
+        </div>
+    </footer>
+
+    <script src="home.js"></script>
+</body>
+</html>

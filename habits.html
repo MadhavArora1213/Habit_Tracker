@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discipline Timeline | INTELLIGENCE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script type="module">
+        import firebaseConfig from './firebase-config.js';
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'auth.html';
+            } else {
+                document.getElementById('user-email').innerText = user.email;
+                // Signal home.js that user is ready
+                window.currentUser = user;
+                if (typeof initHabitTracker === 'function' && document.getElementById('main-habit-table')) {
+                   initHabitTracker(user.uid);
+                }
+            }
+        });
+
+        window.logout = () => {
+            auth.signOut().then(() => {
+                window.location.href = 'auth.html';
+            });
+        };
+    </script>
+</head>
+<body>
+    <div class="bg-ambient"></div>
+
+    <header class="container">
+        <nav class="system-nav">
+            <div class="logo"><a href="index.html" style="text-decoration: none; color: inherit;">Intelligence</a> / Habit Tracker</div>
+            <div class="system-status">
+                <span class="status-indicator"></span>
+                <span>Consistency System: Active // <span id="user-email">...</span></span>
+                <button onclick="logout()" style="background: none; border: 1px solid var(--glass-border); color: var(--text-muted); font-size: 0.6rem; padding: 4px 8px; cursor: pointer; border-radius: 4px; margin-left: 10px;">LOGOUT</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container tracker-main">
+        <section class="tracker-header">
+            <div class="header-left">
+                <div class="month-selector">
+                    <button class="nav-btn" onclick="changeMonth(-1)">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <h1 class="month-title" id="current-month-display">November 2026</h1>
+                    <span id="sync-status" style="font-size: 0.6rem; color: var(--accent-gold); margin-left: 10px; font-weight: 800; text-transform: uppercase;"></span>
+                    <button class="nav-btn" onclick="changeMonth(1)">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+                <div class="protocol-tag">
+                    <span class="pulse-icon"></span>
+                    <span class="hero-meta">SESSION ACTIVE // ID: <span id="protocol-id">HB-772-X</span></span>
+                </div>
+            </div>
+            
+            <div class="header-right header-stats">
+                <button class="btn-premium add-habit-btn" onclick="openHabitModal()">
+                    <span style="font-size: 1.2rem; margin-right: 8px;">◈</span> NEW HABIT
+                </button>
+                <div class="stat-group habits-count">
+                    <span class="stat-label">Habits</span>
+                    <span class="stat-value">0</span>
+                </div>
+                <div class="stat-group progress-group" style="padding: 0 20px; border-left: 1px solid #eee; border-right: 1px solid #eee;">
+                    <span class="stat-label">Global Momentum</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="stat-group">
+                    <span class="stat-label">Efficiency</span>
+                    <span class="stat-value bold" style="font-size: 1.5rem; color: var(--accent-gold);">0%</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Add Habit Modal -->
+        <div id="habit-modal" class="modal-overlay">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3 class="modal-title">Define New Discipline</h3>
+                    <button class="close-btn" onclick="closeHabitModal()">×</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Habit Label</label>
+                    <input type="text" id="new-habit-name" class="form-input" placeholder="e.g., Deep Work (4 Hours)">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Monthly Target</label>
+                    <input type="number" id="new-habit-goal" class="form-input" value="30" max="31">
+                </div>
+                <button class="auth-btn" style="margin-top: 10px;" onclick="addNewHabit()">Add Habit</button>
+            </div>
+        </div>
+
+        <!-- Main Workspace: Tracker + Side Analysis -->
+        <div class="tracker-workspace">
+            <div class="tracker-column-left">
+                <!-- Habit Grid -->
+                <div class="tracker-grid-outer">
+                    <div class="tracker-grid-container">
+                        <table class="habit-table" id="main-habit-table">
+                            <thead>
+                                <tr class="week-row">
+                                    <th rowspan="3" class="habit-name-col">My Habits</th>
+                                    <th colspan="7">Week 1</th>
+                                    <th colspan="7">Week 2</th>
+                                    <th colspan="7">Week 3</th>
+                                    <th colspan="7">Week 4</th>
+                                    <th colspan="2">Final</th>
+                                </tr>
+                                <tr class="day-label-row">
+                                    <!-- Day labels -->
+                                </tr>
+                                <tr class="date-label-row">
+                                    <!-- Dates -->
+                                </tr>
+                            </thead>
+                            <tbody id="habit-table-body"></tbody>
+                            <tfoot>
+                                <tr class="footer-row progress-percent">
+                                    <td class="habit-name-col">Progress</td>
+                                </tr>
+                                <tr class="footer-row done-count">
+                                    <td class="habit-name-col">Done</td>
+                                </tr>
+                                <tr class="footer-row not-done-count">
+                                    <td class="habit-name-col">Not Done</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Primary Chart -->
+                <div class="glass-panel tracker-chart-container">
+                    <div class="chart-header">
+                        <span class="card-title">Daily Execution Intensity</span>
+                    </div>
+                    <div class="viz-container-large">
+                        <canvas id="main-progress-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Mental State Table -->
+                <div class="tracker-grid-outer">
+                    <div class="tracker-grid-container">
+                        <table class="mental-table">
+                            <thead>
+                                <tr>
+                                    <th class="habit-name-col">Mental State</th>
+                                    <th colspan="30">Daily Metrics</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mental-table-body">
+                                <!-- Mood and Motivation rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Secondary Chart (Mental State) -->
+                <div class="glass-panel tracker-chart-container">
+                    <div class="chart-header">
+                        <span class="card-title">Psychological Equilibrium</span>
+                    </div>
+                    <div class="viz-container-large">
+                        <canvas id="mental-state-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar: Analysis -->
+            <div class="tracker-column-right">
+                <div class="glass-panel analysis-panel">
+                    <div class="panel-header">Analysis</div>
+                    <table class="analysis-table">
+                        <thead>
+                            <tr>
+                                <th>Goal</th>
+                                <th>Actual</th>
+                                <th>Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analysis-table-body">
+                            <!-- Analysis rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>INTELLIGENCE SYSTEM © 2026 // CHARACTER_ARCHITECT_v4.2</p>
+        </div>
+    </footer>
+
+    <script src="home.js"></script>
+</body>
+</html>
+
