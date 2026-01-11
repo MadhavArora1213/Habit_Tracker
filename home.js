@@ -444,6 +444,101 @@ async function initDashboardTaskStats(uid) {
     }
 }
 
+// --- DASHBOARD WEEKLY PLANNER STATS ---
+async function initDashboardWeeklyStats(uid) {
+    try {
+        const db = firebase.firestore();
+        
+        // Get current week start (Sunday)
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - dayOfWeek);
+        weekStart.setHours(0, 0, 0, 0);
+        
+        const weekId = `week_${weekStart.toISOString().split('T')[0]}`;
+        
+        const docRef = db.collection('users').doc(uid).collection('weeklyPlanner').doc(weekId);
+        const doc = await docRef.get();
+        
+        let dailyCounts = [0, 0, 0, 0, 0, 0, 0];
+        let dailyCompleted = [0, 0, 0, 0, 0, 0, 0];
+        let totalTasks = 0;
+        let completedTasks = 0;
+        
+        if (doc.exists && doc.data().days) {
+            const days = doc.data().days;
+            for (let i = 0; i < 7; i++) {
+                const dayTasks = days[i] || [];
+                dailyCounts[i] = dayTasks.length;
+                dailyCompleted[i] = dayTasks.filter(t => t.completed).length;
+                totalTasks += dayTasks.length;
+                completedTasks += dailyCompleted[i];
+            }
+        }
+        
+        // Update display
+        const displayEl = document.getElementById('weekly-completed-display');
+        if (displayEl) {
+            displayEl.innerText = `${completedTasks} / ${totalTasks}`;
+        }
+        
+        // Render bar chart
+        const chartCtx = document.getElementById('weekly-planner-chart');
+        if (chartCtx) {
+            const existingChart = Chart.getChart(chartCtx);
+            if (existingChart) existingChart.destroy();
+            
+            new Chart(chartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    datasets: [
+                        {
+                            label: 'Completed',
+                            data: dailyCompleted,
+                            backgroundColor: '#22c55e',
+                            borderRadius: 4,
+                            barPercentage: 0.8
+                        },
+                        {
+                            label: 'Remaining',
+                            data: dailyCounts.map((total, i) => total - dailyCompleted[i]),
+                            backgroundColor: '#dcfce7',
+                            borderRadius: 4,
+                            barPercentage: 0.8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { 
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: { font: { size: 10, weight: 600 }, color: '#166534' }
+                        },
+                        y: { 
+                            stacked: true,
+                            beginAtZero: true,
+                            grid: { color: 'rgba(34, 197, 94, 0.1)' },
+                            ticks: { stepSize: 1, font: { size: 9 } }
+                        }
+                    },
+                    animation: { duration: 2000, easing: 'easeOutQuart' }
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Weekly Stats Error:", e);
+    }
+}
+
+
 // --- ADVANCED HABIT TRACKER LOGIC (FIREBASE INTEGRATED) ---
 
 const now = new Date();
