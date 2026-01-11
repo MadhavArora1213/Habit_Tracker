@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://habit-tracker-intelligence.vercel.app/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 1
+
+# Disallow admin/auth pages from indexing
+Disallow: /auth.html
