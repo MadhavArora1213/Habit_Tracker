@@ -356,9 +356,19 @@ main {
     .hero-title { font-size: 3.5rem; }
 }
 
+@media (max-width: 1200px) {
+    .dashboard-grid { gap: 24px; }
+    .card-wide { grid-column: span 12; }
+    .card-slim { grid-column: span 6; }
+    .card-medium { grid-column: span 6; }
+}
+
 @media (max-width: 1024px) {
     .dashboard-grid { gap: 20px; }
-    .card-wide, .card-slim, .card-medium { grid-column: span 12; }
+    .card-wide { grid-column: span 12; }
+    .card-slim { grid-column: span 6; }
+    .card-medium { grid-column: span 6; }
+    .card-full { grid-column: span 12; }
     .stats-ribbon { 
         flex-direction: column; 
         gap: 50px; 
@@ -367,12 +377,17 @@ main {
 }
 
 @media (max-width: 768px) {
+    .dashboard-grid { gap: 16px; }
+    .card-wide, .card-slim, .card-medium, .card-full { 
+        grid-column: span 12; 
+    }
+    .glass-panel { padding: 24px; }
     .editorial-layout { grid-template-columns: 1fr; gap: 40px; }
     .editorial-layout.reverse { direction: ltr; }
     .hero { padding: 60px 0; }
-    .glass-panel { padding: 24px; } 
     .editorial-heading { font-size: 2.5rem; }
 }
+
 
 @media (max-width: 600px) {
     .system-nav {
